@@ -5,71 +5,83 @@ import scipy
 def getNumberOfRegions( nHyperplanes ):
     return 1 + nHyperplanes + scipy.special.binom(nHyperplanes,2)
 
-def divideRegion( n, region, sideA, sideB, newIndexA, newIndexB ):
+def divideRegion( n, region, sidePreviousRegion, sideNextRegion, newIndexA, newIndexB ):
     '''
         Divides the region region in 2 other regions, with the new hyperplane n
-        passing by sides of index sideA and sideB. newIndexA and newIndexB are 
-        the indices of the 2 new regions formed.
+        passing by sides of index sidePreviousRegion and sideNextRegion.
+        newIndexA and newIndexB are the indices of the 2 new regions formed.
+        region1 is the region which perimeter starts after (in clockwise order) 
+        sidePreviousRegion and finishing by the hyperplane n.
     '''
     region1 = [[],[]]
     region2 = [[],[]]
-    firstRegion = True
-    for k in xrange(len(region[0])):
-        if region[0,k] == sideA or region[0,k] == sideB:
+    started = False
+    c = 0 #counting the number of regions processed
+    k = 0
+    while c < len(region[0]):            
+        k = (k+1) % len(region[0])
+        if (not started) and (region[0,k] == sidePreviousRegion):
+            started = True
+            firstRegion = True
             region1[0].append(region[0,k])
             region1[1].append(region[1,k])
-            region2[0].append(region[0,k])
-            region2[1].append(region[1,k])
-            if firstRegion:
-                region1[0].append(newIndexB)
-                region1[1].append(n)
-            else:
-                region2[0].append(newIndexA)
-                region2[1].append(n)
-            firstRegion = not firstRegion # toggle firstRegion value
-        else:
+        elif started and (region[0,k] == sideNextRegion):
+            firstRegion = False
+            
+        elif started and (region[0,k] != sideNextRegion) and (region[0,k] != sideNextRegion):
             if firstRegion:
                 region1[0].append(region[0,k])
                 region1[1].append(region[1,k])
             else:
                 region2[0].append(region[0,k])
                 region2[1].append(region[1,k])
+        elif started and (region[0,k] == sidePreviousRegion):
+            
+            
+        if started:
+            c = c + 1
     return region1,region2
 
-def recursiveConfigs( n, config, indexRegion, previousRegion, hyperplanesCrossed=[] ):
-    #fin de parcours quand on a traverse tous les hyperplans et que la derniere region est infinie
-    newConfigs = []
-    region = config[indexRegion]
-    
-    for i in xrange(len(region[0])):
-        if region[1,i] not in hyperplanesCrossed:
-            #for each region i neighboring region
-            
-            if len(hyperplanesCrossed) == n:
-                if region[0,i] == -1:
-                    #fin
-                else:
-                    print "!!! !!! Error: blocked by hyperplanes already crossed"
-                    return []
-            else:
-                #nouvelle region traversable: couper la region en 2
+def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previousSecondRegion=-1, hyperplanesCrossed=[] ):
+    '''
+        Recursive function to generate configurations.
+        On the parameters, be careful about indices: some are global indices 
+        (of the "config" array), and some are indices of the "region" array
+    '''
+    # end when the n-th hyperplanes already crossed the n-1 other hyperplanes
+    if len(hyperplanesCrossed) >= n-1 and indexRegion == -1:
+        return config
+    else:
+        newConfigs = []
+        region = config[indexRegion]
+        
+        for localIndex in xrange(len(region[0])):
+            if region[1,localIndex] not in hyperplanesCrossed:
+                # for each neighboring region at localIndex reachable (without re-crossing a hyperplane)
+                # cut the current region to reach that next one
+                
                 newConfig = config
-                region1,region2 = divideRegion( n, region, region[0].index(previousRegion), i, indexRegion, len(config) )
+                region1,region2 = divideRegion( n, region, region[0].index(previousRegion), localIndex, indexRegion, len(config) )
                 newConfig[indexRegion] = region1
                 newConfig.append(region2)
-                #remplacer les references a cette region dans tout le tableau newConfig
+                
+                
+                #TODO remplacer les references a cette region dans tout le tableau newConfig                        
+                #TODO suggestion: utiliser l'ordre (connu) des cotes et la 
+                #TODO connaissance du dernier cote traverse pour comment labelliser la region suivante
                 for j in xrange(len(region2[0])):
                     if region2[0,j] != -1:
                         
-                #TODO suggestion: utiliser l'ordre (connu) des cotes 
-                #et la connaissance du dernier cote traverse pour comment labelliser la region suivante
                 
                 
                 
-                hyperplanesCrossed.append(region[1,i])
-                #appeler
+                # recursively call the function and append its result to newConfigs
+                nextHyperplanesCrossed = hyperplanesCrossed
+                nextHyperplanesCrossed.append(region[1,localIndex])
+                recursiveConfigs = recursiveConfigurations( n+1, newConfig, region[0,localIndex],
+                    indexRegion, len(newConfig), nextHyperplanesCrossed )
                 newConfigs = newConfigs + recursiveConfigs
-    return newConfigs
+        return newConfigs
 
 def generateConfigurations( nHyperplanes ):
     '''
@@ -89,10 +101,11 @@ def generateConfigurations( nHyperplanes ):
     for n in xrange(1,nHyperplanes):
         for config in configs:
             # can check if 2 configs differ only by hyperplanes having inverted departure and arrival regions
+            # check for identical configs
             for k in config:
                 departureRegion = config[k]
                 if -1 in departureRegion:
-                    newConfigs = recursiveConfigs(n,config,indexRegion=k,previousRegion=-1)
+                    newConfigs = recursiveConfigurations(n,config,indexRegion=k,previousRegion=-1)
 
 
 
