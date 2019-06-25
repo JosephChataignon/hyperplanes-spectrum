@@ -19,7 +19,7 @@ def divideRegion( n, region, sidePreviousRegion, sideNextRegion, previousSecondR
     started = False
     c = 0 #counting the number of regions processed
     k = 0
-    while c < len(region[0]):
+    while c <= len(region[0]):
         k = (k+1) % len(region[0])
         if (not started) and (k == sidePreviousRegion):
             started = True
@@ -36,7 +36,7 @@ def divideRegion( n, region, sidePreviousRegion, sideNextRegion, previousSecondR
             region2[1].append(n)
             region2[0].append(region[0][k])
             region2[1].append(region[1][k])
-        elif started and (k != sideNextRegion) and (k != sideNextRegion):
+        elif started and (k != sidePreviousRegion) and (k != sideNextRegion):
             if firstRegion:
                 region1[0].append(region[0][k])
                 region1[1].append(region[1][k])
@@ -49,7 +49,6 @@ def divideRegion( n, region, sidePreviousRegion, sideNextRegion, previousSecondR
             break
         if started:
             c = c + 1
-    print 'region1'
     return region1,region2
 
 def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previousSecondRegion=-1, hyperplanesCrossed=[] ):
@@ -58,48 +57,59 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
         hyperplane being added.
     '''
     
-    print '\ncall to recursiveConfigs\n n =',n,'\n config =',config,'\n hyperplanesCrossed =',hyperplanesCrossed
+    region = config[indexRegion]
     
-    # end when the n-th hyperplanes already crossed the n-1 other hyperplanes
+    # End when the n-th hyperplanes already crossed the n-1 other hyperplanes
     if len(hyperplanesCrossed) >= n :
-        print 'meet stop condition, n=',n
-        if indexRegion == -1:
-            return [config]
-        else:
-            print "error: n hyperplanes crossed but not arrived at an infinite region"
-    else:
-        print 'recursion n=',n
-        newConfigs = []
-        region = config[indexRegion]
+        indexNext = region[0].index(-1)
+        newConfig = copy.deepcopy(config)
+        region1,region2 = divideRegion( n, region=copy.deepcopy(region),
+            sidePreviousRegion=region[0].index(previousRegion), sideNextRegion=indexNext, 
+            previousSecondRegion=previousSecondRegion, newIndexA=indexRegion, newIndexB=len(config) )
+        newConfig[indexRegion] = region1
+        newConfig.append(region2)
+        # replace all references to that region in the array newConfig
+        for j in xrange(len(region2[0])):
+            # for all surrounding regions of region2 except infinity, region1 and the next region
+            if region2[0][j] not in [ -1 , indexRegion , region[0][indexNext] ]:
+                modifiedRegion = newConfig[region2[0][j]]
+                z = modifiedRegion[0].index(indexRegion)
+                modifiedRegion[0][z] = len(newConfig)-1 # index of region2
+                newConfig[region2[0][j]] = modifiedRegion
+        return [newConfig]
         
-        for localIndex in xrange(len(region[0])):
-            if ( region[1][localIndex] not in hyperplanesCrossed ) and ( region[0][localIndex] != -1 ):
-                # for each neighboring region at localIndex reachable (without 
+        
+        
+    else:
+        newConfigs = []
+        
+        for indexNext in xrange(len(region[0])):
+            if ( region[1][indexNext] not in hyperplanesCrossed ) and ( region[0][indexNext] != -1 ):
+                # for each neighboring region at indexNext reachable (without 
                 # re-crossing a hyperplane) and not equal to infinity
                 # cut the current region to reach that next one
                 
-                newConfig = config
-                region1,region2 = divideRegion( n, copy.deepcopy(region),
-                    region[0].index(previousRegion), localIndex, 
-                    previousSecondRegion, indexRegion, len(config) )
+                newConfig = copy.deepcopy(config)
+                region1,region2 = divideRegion( n, region=copy.deepcopy(region),
+                    sidePreviousRegion=region[0].index(previousRegion), sideNextRegion=indexNext, 
+                    previousSecondRegion=previousSecondRegion, newIndexA=indexRegion, newIndexB=len(config) )
                 newConfig[indexRegion] = region1
                 newConfig.append(region2)
                 
                 # replace all references to that region in the array newConfig
                 for j in xrange(len(region2[0])):
                     # for all surrounding regions of region2 except infinity, region1 and the next region
-                    if region2[0][j] not in [ -1 , indexRegion , region[0][localIndex] ]:
+                    if region2[0][j] not in [ -1 , indexRegion , region[0][indexNext] ]:
                         modifiedRegion = newConfig[region2[0][j]]
                         z = modifiedRegion[0].index(indexRegion)
                         modifiedRegion[0][z] = len(newConfig)-1 # index of region2
                         newConfig[region2[0][j]] = modifiedRegion
                 
                 # recursively call the function and append its result to newConfigs
-                nextHyperplanesCrossed = hyperplanesCrossed + [region[1][localIndex]]
-                recursiveConfigs = recursiveConfigurations( n+1, copy.deepcopy(newConfig),
-                    region[0][localIndex], indexRegion, 
-                    len(newConfig), copy.deepcopy(nextHyperplanesCrossed) )
-                print 'recursiveConfigs: ', recursiveConfigs
+                nextHyperplanesCrossed = hyperplanesCrossed + [region[1][indexNext]]
+                recursiveConfigs = recursiveConfigurations( n, copy.deepcopy(newConfig), 
+                    region[0][indexNext], indexRegion,  
+                    len(newConfig)-1, copy.deepcopy(nextHyperplanesCrossed) )
                 newConfigs = newConfigs + recursiveConfigs
         return newConfigs
 
@@ -120,24 +130,29 @@ def generateConfigurations( nHyperplanes ):
     nextConfigs = [config]
     # Start with a config of 1 hyperplane
     for n in xrange(1,nHyperplanes+1):
-        print 'boucle1,n=',n
+        print '\n\nboucle 1, n=',n
+        print 'configs:',nextConfigs
         configs = nextConfigs
         nextConfigs = []
         for config in configs:
-            print 'boucle2,config=',config
-            for k in xrange(len(config)):
-                print 'boucle3,k=',k
-                departureRegion = config[k]
+            print '\nboucle 2, config=',config
+            for departFrom in xrange(len(config)):
+                departureRegion = config[departFrom]
                 if -1 in departureRegion[0]:
-                    newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=k)
+                    print 'boucle 3, departFrom:',departFrom
+                    newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
                     nextConfigs = nextConfigs + newConfigs
+    
+    
+    
+    
     # TODO :
     # Check in configs if 2 configs differ only by hyperplanes having inverted 
     # departure and arrival regions, or if configs are identical
     # This can be done between adding new hyperplanes so less equivalent configs are generated
     print '\nFinal configs:\n',nextConfigs
     
-generateConfigurations(4)
+generateConfigurations(1)
 
 
 
