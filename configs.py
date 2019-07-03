@@ -1,7 +1,16 @@
 # -*- coding: utf-8 -*-
-import numpy as np
+# import os
+#print os.path.dirname(__file__)
+#currentDirectory = os.path.dirname(os.getcwd())
+#os.chdir(currentDirectory)
 import scipy
 import copy
+
+import isomorphisms as isom
+
+
+
+
 
 def getNumberOfRegions( nHyperplanes ):
     return 1 + nHyperplanes + scipy.special.binom(nHyperplanes,2)
@@ -69,7 +78,7 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
         newConfig[indexRegion] = region1
         newConfig.append(region2)
         # replace all references to that region in the array newConfig
-        for j in xrange(len(region2[0])):
+        for j in range(len(region2[0])):
             # for all surrounding regions of region2 except infinity, region1 and the next region
             if region2[0][j] not in [ -1 , indexRegion , region[0][indexNext] ]:
                 modifiedRegion = newConfig[region2[0][j]]
@@ -83,7 +92,7 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
     else:
         newConfigs = []
         
-        for indexNext in xrange(len(region[0])):
+        for indexNext in range(len(region[0])):
             if ( region[1][indexNext] not in hyperplanesCrossed ) and ( region[0][indexNext] != -1 ):
                 # for each neighboring region at indexNext reachable (without 
                 # re-crossing a hyperplane) and not equal to infinity
@@ -97,7 +106,7 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
                 newConfig.append(region2)
                 
                 # replace all references to that region in the array newConfig
-                for j in xrange(len(region2[0])):
+                for j in range(len(region2[0])):
                     # for all surrounding regions of region2 except infinity, region1 and the next region
                     if region2[0][j] not in [ -1 , indexRegion , region[0][indexNext] ]:
                         modifiedRegion = newConfig[region2[0][j]]
@@ -113,10 +122,17 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
                 newConfigs = newConfigs + recursiveConfigs
         return newConfigs
 
+
+
+
+def eliminateDoubles( configs ):
+    # return isom.bruteForce(configs)
+    return isom.Weinberg(configs)
+
 def generateConfigurations( nHyperplanes ):
     '''
-        Generates all the possible configurations of nHyperplanes in 2
-        dimensions.
+        Generates all the possible configurations of nHyperplanes hyperplanes in
+        2 dimensions.
         Configs contains all the configurations. A configuration is modelised by 
         a list of regions. A region is modelised by an ordered list of 
         surrounding regions (represented by their index in the array, -1 
@@ -129,41 +145,31 @@ def generateConfigurations( nHyperplanes ):
     config  = [region0,region1]
     nextConfigs = [config]
     # Start with a config of 1 hyperplane
-    for n in xrange(1,nHyperplanes+1):
-        print '\n\nboucle 1, n=',n
-        print 'configs:',nextConfigs
+    for n in range(1,nHyperplanes):
+        print('\n\nboucle 1, n=',n)
+        print('configs:',nextConfigs)
         configs = nextConfigs
         nextConfigs = []
         for config in configs:
-            print '\nboucle 2, config=',config
-            for departFrom in xrange(len(config)):
+            print('\nboucle 2, config=',config)
+            for departFrom in range(len(config)):
                 departureRegion = config[departFrom]
                 if -1 in departureRegion[0]:
-                    print 'boucle 3, departFrom:',departFrom
+                    print('boucle 3, departFrom:',departFrom)
                     newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
                     nextConfigs = nextConfigs + newConfigs
-    
+        nextConfigs = eliminateDoubles(nextConfigs) 
+    return nextConfigs
     
     
     
     # TODO :
     # Check in configs if 2 configs differ only by hyperplanes having inverted 
     # departure and arrival regions, or if configs are identical
-    # This can be done between adding new hyperplanes so less equivalent configs are generated
-    print '\nFinal configs:\n',nextConfigs
+    print('\nFinal configs:\n',nextConfigs)
     
-generateConfigurations(1)
-
-
-
-
-
-
-
-
-
-
-
+z=generateConfigurations(3)
+print('final configs',z)
 
 
 
