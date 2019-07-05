@@ -127,7 +127,7 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
 
 def eliminateDoubles( configs ):
     # return isom.bruteForce(configs)
-    return isom.Weinberg(configs)
+    return isom.Weinberg(copy.deepcopy(configs))
 
 def generateConfigurations( nHyperplanes ):
     '''
