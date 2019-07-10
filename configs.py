@@ -140,18 +140,21 @@ def generateConfigurations( nHyperplanes ):
         hyperplanes separating these regions (-1 for unbounded regions).
         The lists of surrounding regions and hyperplanes are in clockwise order.
     '''
+    # Start with a config of 1 hyperplane
     region0 = [[-1,1],[-1,0]]
     region1 = [[-1,0],[-1,0]]
     config  = [region0,region1]
     nextConfigs = [config]
-    # Start with a config of 1 hyperplane
+    # Loop adding hyperplanes
     for n in range(1,nHyperplanes):
         print('\n\nboucle 1, n=',n)
         print('configs:',nextConfigs)
         configs = nextConfigs
         nextConfigs = []
+        # Iterate through configurations
         for config in configs:
             print('\nboucle 2, config=',config)
+            # Pass by all "departure points" possible for the new hyperplane
             for departFrom in range(len(config)):
                 departureRegion = config[departFrom]
                 if -1 in departureRegion[0]:
@@ -168,8 +171,8 @@ def generateConfigurations( nHyperplanes ):
     # departure and arrival regions, or if configs are identical
     print('\nFinal configs:\n',nextConfigs)
     
-z=generateConfigurations(3)
-print('final configs',z)
+z=generateConfigurations(5)
+print('final configs:\n',z)
 
 
 

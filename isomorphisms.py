@@ -132,7 +132,7 @@ def choseNextBranch(branchesVisited,node,previousBranch,reverseOrder):
     counter-clockwise.
     """
     started = False
-    for k in range(3*len(branchesVisited[node])):
+    for k in range( 2*len(branchesVisited[node]) + 1 ):
         if reverseOrder:
             k = -k
         b = k % len(branchesVisited[node])
@@ -155,33 +155,42 @@ def generateCodeVector(config,r,b,reverseOrder=False):
     path = [r]
     initialNode = r; branch = b; terminalNode = config[r][0][b];
     # Inside the loop, we mark the current branch (between initialNode and 
-    # terminalNode) as visited, as well as terminalNode, add terminalNode to 
-    # path, and update the value of initialNode, terminalNode and branch.
+    # terminalNode) as visited, as well as terminalNode if it isn't already,
+    # we add terminalNode to path, and update the value of initialNode,
+    # terminalNode and branch.
     while(True):#Could be changed, length of eulerian path
         reverseBranch = config[terminalNode][0].index(initialNode)
-        if nodesVisited[terminalNode] == False: #new node
+        
+        branchesVisited[initialNode][branch] = True
+        path.append(terminalNode)
+        
+        if nodesVisited[terminalNode] == False: #new node: go to next branch
             nodesVisited[terminalNode] = True
-            branchesVisited[initialNode][branch] = True
-            path.append(terminalNode)
-            initialNode = terminalNode
+            
             branch = choseNextBranch(branchesVisited,terminalNode,reverseBranch,reverseOrder)
             if branch == None:
+                print("Error: no available branch on a new node")
                 break
+            initialNode = terminalNode
             terminalNode = config[terminalNode][0][branch]
+        
         else: #old node
-            if branchesVisited[terminalNode][reverseBranch] == False: #new branch
+            
+            if branchesVisited[terminalNode][reverseBranch] == False: #new branch: make a U-turn
                 branchesVisited[terminalNode][reverseBranch] = True
-                branchesVisited[initialNode][branch] = True
-                path.append(terminalNode)
                 path.append(initialNode)
-                initialNode, terminalNode = terminalNode, initialNode
-            else: #old branch
-                branchesVisited[initialNode][branch] = True
-                path.append(terminalNode)
-                initialNode = terminalNode
+                branch = choseNextBranch(branchesVisited,initialNode,branch,reverseOrder)
+                if branch == None:
+                    print("Error: no available branch while coming from a new branch\n")
+                    print("path:\n",path,"\n")
+                    break
+                terminalNode = config[initialNode][0][branch]
+                
+            else: #old branch: go to next available branch
                 branch = choseNextBranch(branchesVisited,terminalNode,reverseBranch,reverseOrder)
                 if branch == None:
                     break
+                initialNode = terminalNode
                 terminalNode = config[terminalNode][0][branch]
     else:
         print("Error: no break instruction reached in the loop")
@@ -264,7 +273,6 @@ def Weinberg( configs ):
     """
     # generate the vector of nodes valence and the vector of meshes shapes
     nodesValence = getNodesValence(configs)
-    print('valence',nodesValence)
     
     #meshesShapes = getMeshesShapes(configs)
     # To do: we still need to find an efficient way to get meshes shapes
@@ -326,15 +334,15 @@ def Weinberg( configs ):
 #config = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]#config 4 regions
 #config2 = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]
     
-config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]#config 4 regions
-config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
+#config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]#config 4 regions
+#config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
 
 #configs = addInfiniteRegion([config])
 #print('config: ',configs[0])
 #print( 'vector code', generateCodeVector(configs[0],0,0) )
-configs = [config,config2]
-W = Weinberg(configs)
-print( W,len(W) )
+#configs = [config,config2]
+#W = Weinberg(configs)
+#print( W,len(W) )
 
 
 
