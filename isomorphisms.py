@@ -124,10 +124,10 @@ def getNodesValence(configs):
         nodesValence.append(val)
     return nodesValence
 
-def choseNextBranch(branchesVisited,node,previousNode,reverseOrder):
+def choseNextBranch(branchesVisited,node,previousBranch,reverseOrder):
     """
     Returns the next branch that has not already been used in this direction, 
-    at node node and coming from node previousNode.
+    at node node and coming from branch previousBranch.
     Default order is clockwise, but if reverseOrder is true the order is
     counter-clockwise.
     """
@@ -138,20 +138,26 @@ def choseNextBranch(branchesVisited,node,previousNode,reverseOrder):
         b = k % len(branchesVisited[node])
         if started and (not branchesVisited[node][b]):
             return b
-        if b == previousNode:
+        if b == previousBranch:
             started = True    
 
 def generateCodeVector(config,r,b,reverseOrder=False):
     """
-    Given a configuration, a node of 
+    Given a configuration, a node of index r and a branch of index b on this 
+    node, this function follows Weinberg's algorithm to generate the eulerian 
+    path and return the code vector of the configuration config for starting 
+    branch b on node r.
+    Variable reverseOrder indicates whether the order is default or not 
+    (clockwise or counterclockwise).
     """
-    nodesVisited = [False]*len(config)
+    nodesVisited = [False]*len(config); nodesVisited[r] = True
     branchesVisited = [ [False]*len(region[0]) for region in config]
     path = [r]
     initialNode = r; branch = b; terminalNode = config[r][0][b];
-    # Inside the loop, we mark the current branch (between initialNode and terminalNode) as visited,
-    # as well as terminalNode,  add terminalNode to path, and update the value of terminalNode and branch
-    for c in range(10000):#To be changed, length of eulerian path
+    # Inside the loop, we mark the current branch (between initialNode and 
+    # terminalNode) as visited, as well as terminalNode, add terminalNode to 
+    # path, and update the value of initialNode, terminalNode and branch.
+    while(True):#Could be changed, length of eulerian path
         reverseBranch = config[terminalNode][0].index(initialNode)
         if nodesVisited[terminalNode] == False: #new node
             nodesVisited[terminalNode] = True
@@ -178,7 +184,7 @@ def generateCodeVector(config,r,b,reverseOrder=False):
                     break
                 terminalNode = config[terminalNode][0][branch]
     else:
-        print("No breakpoint reached in the loop")
+        print("Error: no break instruction reached in the loop")
     correspondance = []
     vector = []
     for n in path:
@@ -187,11 +193,12 @@ def generateCodeVector(config,r,b,reverseOrder=False):
             vector.append( len(correspondance)-1 )
         else:
             vector.append( correspondance.index(n) )
-    #to do: check that correspondance has the same length as config?
-    print('path',path)
     return vector
 
 def generateCodeMatrix(config):
+    """
+    Generates the full code matrix from a given configuration
+    """
     codeMat = []
     for r in range(len(config)): # r like region
         for b in range(len( config[r][0] )): # b like branch
@@ -201,12 +208,20 @@ def generateCodeMatrix(config):
     return codeMat
 
 def findGraphEdge(config,infiniteIndex):
+    """
+    Returns the first node found to be on the edge of the graph without the 
+    infinite region
+    """
     for r in range(len(config)):
         for b in config[r][0]:
             if b == infiniteIndex:
                 return r
 
 def addInfiniteRegion(configs):
+    """
+    Adds the infinite region as a node of the graph to each configuration in
+    the array configs
+    """
     infiniteIndex = len(configs[0])
     # replace reference to region - can be used to easily remove hyperplanes
     configs = [[[[infiniteIndex if i == -1 else i for i in j] for j in k] for k in l] for l in configs]
@@ -223,30 +238,103 @@ def addInfiniteRegion(configs):
         configs[k].append([newRegion,newRegion])
     return configs
 
+def graphBranchFromLabel(config,n):
+    """
+    Returns indices of the node and branch of the branch corresponding to label
+    n in the graph of config (with oriented branches, hence the variable 
+    reverseOrder)
+    returns -1 as r if n > number of branches
+    """
+    r = 0; b = -1; reverseOrder = False
+    for c in range(n+1):
+        b += 1
+        if len(config[r]) <= b:
+            b = -1; r += 1
+        if len(config) <= r:
+            if reverseOrder == False:
+                b = -1; r = 1; reverseOrder = True
+            else:
+                return -1,-1,False
+    return r,b,reverseOrder
+
 def Weinberg( configs ):
+    """
+    Applies the Weinberg algorithm to reduce the size of configs by eliminating
+    a config when 2 of them are isomorphic.
+    """
     # generate the vector of nodes valence and the vector of meshes shapes
     nodesValence = getNodesValence(configs)
-    #meshesShapes = getMeshesShapes(configs) # We still need to find an efficient way to get meshes shapes
+    print('valence',nodesValence)
+    
+    #meshesShapes = getMeshesShapes(configs)
+    # To do: we still need to find an efficient way to get meshes shapes
+    
     # add region -1
-    configs = addInfiniteRegion(configs)
-    # for those who have the same characteristics, generate the code matrix
-    newConfigs = 
+    configsInf = addInfiniteRegion(configs)
+    
+    
+    newConfigs = [] # contains INDICES from configs
+    vectors = [ [] for k in range(len(configsInf)) ]
+    for k in range(len(configsInf)):
+        vectorsAreEqual = False
+        for i in newConfigs:
+            # check valence
+            if nodesValence[k] != nodesValence[i]:
+                newConfigs.append(k)
+                break
+            
+        else: # if valences are identical, check existing vectors compared to v
+            v = generateCodeVector(configsInf[k],0,0)
+            for i in newConfigs:
+                vectorsAreEqual = False
+                for j in vectors[i]:
+                    if j == v:
+                        vectorsAreEqual = True
+                        break
+                if vectorsAreEqual:
+                    break # vectors are equal, so we break the loop without adding k to newConfigs
+                    
+            else: # if no already generated vectors match with v, add vectors to previously registered configs
+                for i in newConfigs:
+                    while True:
+                        r,b,reverseOrder = graphBranchFromLabel( configsInf[i],len(vectors[i]) )
+                        if r == -1:
+                            break
+                        newVect = generateCodeVector(configsInf[i],r,b,reverseOrder)
+                        vectors[i].append(newVect)
+                        if newVect == v:
+                            vectorsAreEqual = True
+                            break
+                    if vectorsAreEqual:
+                        break # vectors are equal, so we break the loop without adding k to newConfigs
+                        # It's ugly, but break for multiple nested loops is not implemented in Python
+                        
+        # if still different, add k to newConfigs with vector v
+        if not vectorsAreEqual:
+            newConfigs.append(k)
+            vectors[k] = [v]
+    configsReturned = []
+    for i in newConfigs:
+        configsReturned.append(configs[i])
+    return configsReturned # return configs with only indices from newConfigs
 
 
 
 
 
 
+#config = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]#config 4 regions
+#config2 = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]
+    
+config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]#config 4 regions
+config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
 
-
-
-
-
-config = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]
-configs = addInfiniteRegion([config])
-print(configs[0])
-print( 'vector code', generateCodeVector(configs[0],0,0) )
-
+#configs = addInfiniteRegion([config])
+#print('config: ',configs[0])
+#print( 'vector code', generateCodeVector(configs[0],0,0) )
+configs = [config,config2]
+W = Weinberg(configs)
+print( W,len(W) )
 
 
 
