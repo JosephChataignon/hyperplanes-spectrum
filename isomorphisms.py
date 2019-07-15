@@ -102,11 +102,13 @@ def bruteForce( configs ):
 
 
 
+###############################################################################
 
 # This second method is based on the algorithm presented by Louis Weinberg in 
 # his paper "A Simple and Efficient Algorithm for Determining Isomorphism of 
 # Planar Triply Connected Graphs" from 1965, available at 
 # ieeexplore.ieee.org/document/1082573
+
 
 def getNodesValence(configs):
     """
@@ -218,8 +220,10 @@ def generateCodeMatrix(config):
 
 def findGraphEdge(config,infiniteIndex):
     """
-    Returns the first node found to be on the edge of the graph without the 
-    infinite region
+    Returns the first node of config that is on the border of the graph (ie, 
+    that is linked by an edge to the infinite region). infiniteIndex is the 
+    index of the infinite region in config.
+    Applies to a config processed by addInfiniteRegion()
     """
     for r in range(len(config)):
         for b in config[r][0]:
@@ -253,15 +257,16 @@ def graphBranchFromLabel(config,n):
     n in the graph of config (with oriented branches, hence the variable 
     reverseOrder)
     returns -1 as r if n > number of branches
+    Applies to a config processed by addInfiniteRegion()
     """
     r = 0; b = -1; reverseOrder = False
     for c in range(n+1):
         b += 1
-        if len(config[r]) <= b:
-            b = -1; r += 1
+        if len(config[r][0]) <= b:
+            b = 0; r += 1
         if len(config) <= r:
             if reverseOrder == False:
-                b = -1; r = 1; reverseOrder = True
+                b = 0; r = 0; reverseOrder = True
             else:
                 return -1,-1,False
     return r,b,reverseOrder
@@ -281,9 +286,9 @@ def Weinberg( configs ):
     configsInf = addInfiniteRegion(configs)
     
     
-    newConfigs = [] # contains INDICES from configs
-    vectors = [ [] for k in range(len(configsInf)) ]
-    for k in range(len(configsInf)):
+    newConfigs = [0] # contains INDICES from configs
+    vectors = [ [] for k in range(len(configsInf)) ] # list of the lists of vectors of each graph
+    for k in range( 1 , len(configsInf) ):
         vectorsAreEqual = False
         for i in newConfigs:
             # check valence
@@ -324,6 +329,11 @@ def Weinberg( configs ):
     configsReturned = []
     for i in newConfigs:
         configsReturned.append(configs[i])
+    
+    for i in range(len(vectors[0])):
+        for j in range(len(vectors[1])):
+            if vectors[0][i]==vectors[1][j]:
+                print('equals, at ',i,'and',j)
     return configsReturned # return configs with only indices from newConfigs
 
 
@@ -337,13 +347,20 @@ def Weinberg( configs ):
 #config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]#config 4 regions
 #config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
 
-#configs = addInfiniteRegion([config])
 #print('config: ',configs[0])
 #print( 'vector code', generateCodeVector(configs[0],0,0) )
 #configs = [config,config2]
+#
+#configs = [[[[-1, 1, 7], [-1, 0, 3]], [[0, -1, 3, 8], [0, -1, 1, 3]], [[4, 10, -1], [1, 0, -1]], [[1, -1, 6, 9], [1, -1, 2, 3]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 10, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[0, 8, 4, -1], [3, 0, 2, -1]], [[1, 9, 5, 7], [3, 1, 2, 0]], [[3, 10, 8], [3, 2, 1]], [[6, -1, 2, 5, 9], [3, -1, 0, 1, 2]]], [[[4, -1, 1, 8], [2, -1, 0, 3]], [[0, -1, 3, 9], [0, -1, 1, 3]], [[7, 6, -1], [1, 0, -1]], [[1, -1, 10], [1, -1, 3]], [[-1, 0, 7], [-1, 2, 3]], [[9, 6, 7], [2, 1, 0]], [[10, -1, 2, 5], [2, -1, 0, 1]], [[4, 8, 5, 2, -1], [3, 2, 0, 1, -1]], [[0, 9, 7], [3, 0, 2]], [[1, 10, 5, 8], [3, 1, 2, 0]], [[3, -1, 6, 9], [3, -1, 2, 1]]]]
+#
 #W = Weinberg(configs)
-#print( W,len(W) )
+#print( '\n',len(W),'configuration(s):\n',W )
 
+
+
+#configs = addInfiniteRegion(configs)
+#M=generateCodeMatrix(configs[0])
+#V=generateCodeVector(configs[1],0,1)
 
 
 
