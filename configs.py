@@ -162,7 +162,7 @@ def generateConfigurations( nHyperplanes ):
                     newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
                     nextConfigs = nextConfigs + newConfigs
         nextConfigs = eliminateDoubles(nextConfigs)
-        print(n,'hyperplanes: ',len(nextConfigs),'configuration(s)')
+        print(n+1,'hyperplanes: ',len(nextConfigs),'configuration(s)')
     return nextConfigs
     
     

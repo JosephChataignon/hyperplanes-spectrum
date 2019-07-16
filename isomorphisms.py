@@ -271,6 +271,26 @@ def graphBranchFromLabel(config,n):
                 return -1,-1,False
     return r,b,reverseOrder
 
+def checkIdenticalExistingVectors( configs, newConfigs, vectors, v, k ):
+    for i in newConfigs:
+        for j in vectors[i]:
+            if j == v:
+                return True
+
+def checkIdenticalNewVectors( configs, newConfigs, vectors, v ):
+    for i in newConfigs:
+        while True:
+            # Get the next vector for config i
+            r,b,reverseOrder = graphBranchFromLabel( configs[i],len(vectors[i]) )
+            if r == -1:
+                break
+            newVect = generateCodeVector(configs[i],r,b,reverseOrder)
+            # Add it to vectors
+            vectors[i].append(newVect)
+            # Check if it is equal to v
+            if newVect == v:
+                return True
+
 def Weinberg( configs ):
     """
     Applies the Weinberg algorithm to reduce the size of configs by eliminating
@@ -288,79 +308,49 @@ def Weinberg( configs ):
     
     newConfigs = [0] # contains INDICES from configs
     vectors = [ [] for k in range(len(configsInf)) ] # list of the lists of vectors of each graph
+    
+    # for each config k, check if it is isomorphic to a previous config i
     for k in range( 1 , len(configsInf) ):
-        vectorsAreEqual = False
+        
         for i in newConfigs:
-            # check valence
+            # check if valences are equal
             if nodesValence[k] != nodesValence[i]:
                 newConfigs.append(k)
                 break
             
         else: # if valences are identical, check existing vectors compared to v
             v = generateCodeVector(configsInf[k],0,0)
-            for i in newConfigs:
-                vectorsAreEqual = False
-                for j in vectors[i]:
-                    if j == v:
-                        vectorsAreEqual = True
-                        break
-                if vectorsAreEqual:
-                    break # vectors are equal, so we break the loop without adding k to newConfigs
+            if checkIdenticalExistingVectors( configsInf, newConfigs, vectors, v, k ):
+                break
                     
-            else: # if no already generated vectors match with v, add vectors to previously registered configs
-                for i in newConfigs:
-                    while True:
-                        r,b,reverseOrder = graphBranchFromLabel( configsInf[i],len(vectors[i]) )
-                        if r == -1:
-                            break
-                        newVect = generateCodeVector(configsInf[i],r,b,reverseOrder)
-                        vectors[i].append(newVect)
-                        if newVect == v:
-                            vectorsAreEqual = True
-                            break
-                    if vectorsAreEqual:
-                        break # vectors are equal, so we break the loop without adding k to newConfigs
-                        # It's ugly, but break for multiple nested loops is not implemented in Python
-                        
-        # if still different, add k to newConfigs with vector v
-        if not vectorsAreEqual:
-            newConfigs.append(k)
-            vectors[k] = [v]
+            # if no already generated vectors match with v, add vectors to previously registered configs
+            if checkIdenticalNewVectors(configsInf, newConfigs, vectors, v):
+                break
+            else:
+                newConfigs.append(k)
+                vectors[k] = [v]
+    
+    # Conversion from indices to actual configurations
     configsReturned = []
     for i in newConfigs:
         configsReturned.append(configs[i])
     
-    for i in range(len(vectors[0])):
-        for j in range(len(vectors[1])):
-            if vectors[0][i]==vectors[1][j]:
-                print('equals, at ',i,'and',j)
     return configsReturned # return configs with only indices from newConfigs
 
 
 
 
 
-
-#config = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]#config 4 regions
+#config 2 regions:
+#config = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]
 #config2 = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]
-    
-#config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]#config 4 regions
+
+#config 4 regions:
+#config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]
 #config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
 
-#print('config: ',configs[0])
-#print( 'vector code', generateCodeVector(configs[0],0,0) )
-#configs = [config,config2]
-#
-#configs = [[[[-1, 1, 7], [-1, 0, 3]], [[0, -1, 3, 8], [0, -1, 1, 3]], [[4, 10, -1], [1, 0, -1]], [[1, -1, 6, 9], [1, -1, 2, 3]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 10, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[0, 8, 4, -1], [3, 0, 2, -1]], [[1, 9, 5, 7], [3, 1, 2, 0]], [[3, 10, 8], [3, 2, 1]], [[6, -1, 2, 5, 9], [3, -1, 0, 1, 2]]], [[[4, -1, 1, 8], [2, -1, 0, 3]], [[0, -1, 3, 9], [0, -1, 1, 3]], [[7, 6, -1], [1, 0, -1]], [[1, -1, 10], [1, -1, 3]], [[-1, 0, 7], [-1, 2, 3]], [[9, 6, 7], [2, 1, 0]], [[10, -1, 2, 5], [2, -1, 0, 1]], [[4, 8, 5, 2, -1], [3, 2, 0, 1, -1]], [[0, 9, 7], [3, 0, 2]], [[1, 10, 5, 8], [3, 1, 2, 0]], [[3, -1, 6, 9], [3, -1, 2, 1]]]]
-#
-#W = Weinberg(configs)
-#print( '\n',len(W),'configuration(s):\n',W )
-
-
-
-#configs = addInfiniteRegion(configs)
-#M=generateCodeMatrix(configs[0])
-#V=generateCodeVector(configs[1],0,1)
+#configs=[[[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 13], [1, -1, 2, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10, 14], [2, -1, 3, 4]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 9, 5, 7], [3, 1, 2, 0]], [[13, 15, 8], [3, 2, 1]], [[6, -1, 15], [3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 9, 12], [4, 2, 3, 1]], [[6, 15, 13], [4, 3, 2]], [[10, -1, 2, 5, 9, 14], [4, -1, 0, 1, 2, 3]]], [[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 9, 13], [1, -1, 2, 3, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 14, 5, 7], [3, 1, 2, 0]], [[3, 10, 14], [3, 2, 4]], [[9, 6, -1, 15], [2, 3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 12], [4, 3, 1]], [[9, 15, 8, 13], [4, 2, 1, 3]], [[10, -1, 2, 5, 14], [4, -1, 0, 1, 2]]]]
+#Weinberg(configs)
 
 
 
