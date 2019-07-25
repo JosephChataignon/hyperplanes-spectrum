@@ -116,13 +116,14 @@ def getNodesValence(configs):
     the numbers of nodes having the valence (ie, number of branches) 
     corresponding to the index in the list.
     For example, if there are 3 nodes with valence equal to 5 in the graph of 
-    the i-th config, then the output at coordinates (i,5) will be 3
+    the i-th config, then the output at coordinates (i,5) will be 3.
+    Applies to a config processed by addInfiniteRegion()
     """
     nodesValence = []
     for config in configs:
         val = [0]*(len(config)+1)
         for region in config:
-            val[ len(region[0]) ] += 1
+            val[ len(region) ] += 1
         nodesValence.append(val)
     return nodesValence
 
@@ -151,17 +152,18 @@ def generateCodeVector(config,r,b,reverseOrder=False):
     branch b on node r.
     Variable reverseOrder indicates whether the order is default or not 
     (clockwise or counterclockwise).
+    Applies to a config processed by addInfiniteRegion()
     """
     nodesVisited = [False]*len(config); nodesVisited[r] = True
-    branchesVisited = [ [False]*len(region[0]) for region in config]
+    branchesVisited = [ [False]*len(region) for region in config]
     path = [r]
-    initialNode = r; branch = b; terminalNode = config[r][0][b];
+    initialNode = r; branch = b; terminalNode = config[r][b];
     # Inside the loop, we mark the current branch (between initialNode and 
     # terminalNode) as visited, as well as terminalNode if it isn't already,
     # we add terminalNode to path, and update the value of initialNode,
     # terminalNode and branch.
     while(True):#Could be changed, length of eulerian path
-        reverseBranch = config[terminalNode][0].index(initialNode)
+        reverseBranch = config[terminalNode].index(initialNode)
         
         branchesVisited[initialNode][branch] = True
         path.append(terminalNode)
@@ -174,7 +176,7 @@ def generateCodeVector(config,r,b,reverseOrder=False):
                 print("Error: no available branch on a new node")
                 break
             initialNode = terminalNode
-            terminalNode = config[terminalNode][0][branch]
+            terminalNode = config[terminalNode][branch]
         
         else: #old node
             
@@ -186,14 +188,14 @@ def generateCodeVector(config,r,b,reverseOrder=False):
                     print("Error: no available branch while coming from a new branch\n")
                     print("path:\n",path,"\n")
                     break
-                terminalNode = config[initialNode][0][branch]
+                terminalNode = config[initialNode][branch]
                 
             else: #old branch: go to next available branch
                 branch = choseNextBranch(branchesVisited,terminalNode,reverseBranch,reverseOrder)
                 if branch == None:
                     break
                 initialNode = terminalNode
-                terminalNode = config[terminalNode][0][branch]
+                terminalNode = config[terminalNode][branch]
     else:
         print("Error: no break instruction reached in the loop")
     correspondance = []
@@ -208,11 +210,12 @@ def generateCodeVector(config,r,b,reverseOrder=False):
 
 def generateCodeMatrix(config):
     """
-    Generates the full code matrix from a given configuration
+    Generates the full code matrix from a given configuration.
+    Applies to a config processed by addInfiniteRegion()
     """
     codeMat = []
     for r in range(len(config)): # r like region
-        for b in range(len( config[r][0] )): # b like branch
+        for b in range(len( config[r] )): # b like branch
             codeMat.append( generateCodeVector(config,r,b) )
             codeMat.append( generateCodeVector(config,r,b,True) )
     # To do: sort the vectors
@@ -226,7 +229,7 @@ def findGraphEdge(config,infiniteIndex):
     Applies to a config processed by addInfiniteRegion()
     """
     for r in range(len(config)):
-        for b in config[r][0]:
+        for b in config[r]:
             if b == infiniteIndex:
                 return r
 
@@ -236,19 +239,19 @@ def addInfiniteRegion(configs):
     the array configs
     """
     infiniteIndex = len(configs[0])
-    # replace reference to region - can be used to easily remove hyperplanes
-    configs = [[[[infiniteIndex if i == -1 else i for i in j] for j in k] for k in l] for l in configs]
-    # add new region
+    # replace reference to the infinite region and delete hyperplanes
+    configs = [[[infiniteIndex if b == -1 else b for b in r[0]] for r in config] for config in configs]
+    # add the new region
     for k in range(len(configs)):
         newRegion = []
         r = findGraphEdge(configs[k],infiniteIndex)
         while True:
-            localR = (configs[k][r][0].index(infiniteIndex)-1)%len(configs[k][r][0])
-            r = configs[k][r][0][localR]
+            localR = (configs[k][r].index(infiniteIndex)-1)%len(configs[k][r])
+            r = configs[k][r][localR]
             if r in newRegion:
                 break
             newRegion.append(r)
-        configs[k].append([newRegion,newRegion])
+        configs[k].append(newRegion)
     return configs
 
 def graphBranchFromLabel(config,n):
@@ -262,7 +265,7 @@ def graphBranchFromLabel(config,n):
     r = 0; b = -1; reverseOrder = False
     for c in range(n+1):
         b += 1
-        if len(config[r][0]) <= b:
+        if len(config[r]) <= b:
             b = 0; r += 1
         if len(config) <= r:
             if reverseOrder == False:
@@ -296,14 +299,14 @@ def Weinberg( configs ):
     Applies the Weinberg algorithm to reduce the size of configs by eliminating
     a config when 2 of them are isomorphic.
     """
+    # add region -1
+    configsInf = addInfiniteRegion(configs)
+    
     # generate the vector of nodes valence and the vector of meshes shapes
     nodesValence = getNodesValence(configs)
     
     #meshesShapes = getMeshesShapes(configs)
     # To do: we still need to find an efficient way to get meshes shapes
-    
-    # add region -1
-    configsInf = addInfiniteRegion(configs)
     
     
     newConfigs = [0] # contains INDICES from configs
@@ -349,8 +352,13 @@ def Weinberg( configs ):
 #config = [ [[-1, 1,6,5], [0]*4], [[-1,2, 0], [0]*3], [[1,-1,3,6], [0]*4], [[-1,4,2], [0]*3], [[-1,5,6,3], [0]*4], [[-1,0,4], [0]*3], [[0,2,4], [0]*3] ]
 #config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
 
-#configs=[[[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 13], [1, -1, 2, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10, 14], [2, -1, 3, 4]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 9, 5, 7], [3, 1, 2, 0]], [[13, 15, 8], [3, 2, 1]], [[6, -1, 15], [3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 9, 12], [4, 2, 3, 1]], [[6, 15, 13], [4, 3, 2]], [[10, -1, 2, 5, 9, 14], [4, -1, 0, 1, 2, 3]]], [[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 9, 13], [1, -1, 2, 3, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 14, 5, 7], [3, 1, 2, 0]], [[3, 10, 14], [3, 2, 4]], [[9, 6, -1, 15], [2, 3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 12], [4, 3, 1]], [[9, 15, 8, 13], [4, 2, 1, 3]], [[10, -1, 2, 5, 14], [4, -1, 0, 1, 2]]]]
-#Weinberg(configs)
+#configs=[config,config2]
+#configs = [[[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 13], [1, -1, 2, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10, 14], [2, -1, 3, 4]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 9, 5, 7], [3, 1, 2, 0]], [[13, 15, 8], [3, 2, 1]], [[6, -1, 15], [3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 9, 12], [4, 2, 3, 1]], [[6, 15, 13], [4, 3, 2]], [[10, -1, 2, 5, 9, 14], [4, -1, 0, 1, 2, 3]]], [[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 9, 13], [1, -1, 2, 3, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 14, 5, 7], [3, 1, 2, 0]], [[3, 10, 14], [3, 2, 4]], [[9, 6, -1, 15], [2, 3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 12], [4, 3, 1]], [[9, 15, 8, 13], [4, 2, 1, 3]], [[10, -1, 2, 5, 14], [4, -1, 0, 1, 2]]], [[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 8, 12], [0, -1, 1, 3, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 9], [1, -1, 2, 3]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[13, 15, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[11, 13, 4, -1], [3, 0, 2, -1]], [[1, 9, 13], [3, 1, 4]], [[8, 3, 10, 14], [1, 3, 2, 4]], [[9, 6, -1, 15], [2, 3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 11], [4, 3, 0]], [[8, 14, 5, 7, 12], [4, 1, 2, 0, 3]], [[9, 15, 13], [4, 2, 1]], [[10, -1, 2, 5, 14], [4, -1, 0, 1, 2]]],[[[-1, 1, 9], [-1, 1, 9]], [[-1, 2, 11, 10, 0], [-1, 2, 11, 10, 0]], [[-1, 3, 1], [-1, 3, 1]], [[-1, 4, 12, 11, 2], [-1, 4, 12, 11, 2]], [[-1, 5, 3], [-1, 5, 3]], [[-1, 6, 13, 12, 4], [-1, 6, 13, 12, 4]], [[-1, 7, 5], [-1, 7, 5]], [[-1, 8, 14, 13, 6], [-1, 8, 14, 13, 6]], [[-1, 9, 7], [-1, 9, 7]], [[-1, 0, 10, 14, 8], [-1, 0, 10, 14, 8]], [[1, 15, 9], [1, 15, 9]], [[1, 3, 15], [1, 3, 15]], [[3, 5, 15], [3, 5, 15]], [[5, 7, 15], [5, 7, 15]], [[7, 9, 15], [7, 9, 15]], [[10, 11, 12, 13, 14], [10, 11, 12, 13, 14]]]]
+
+#print(len(configs))
+#z=Weinberg(configs)
+#print(z)
+#print(len(z))
 
 
 

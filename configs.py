@@ -148,19 +148,22 @@ def generateConfigurations( nHyperplanes ):
     # Loop adding hyperplanes
     for n in range(1,nHyperplanes):
         #print('\n\nboucle 1, n=',n)
-        #print('configs:',nextConfigs)
-        configs = nextConfigs
-        nextConfigs = []
+        configs, nextConfigs = nextConfigs, []
         # Iterate through configurations
         for config in configs:
+            if n==4:
+                print(config)
             #print('\nboucle 2, config=',config)
             # Pass by all "departure points" possible for the new hyperplane
             for departFrom in range(len(config)):
-                departureRegion = config[departFrom]
-                if -1 in departureRegion[0]:
+                if -1 in config[departFrom][0]: # if the region is on the edge of infinity
                     #print('boucle 3, departFrom:',departFrom)
                     newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
+                    if n==4:
+                        print("with depart from ",departFrom,", we have",len(newConfigs)," new Configs")
                     nextConfigs = nextConfigs + newConfigs
+        if n==4:
+            print("n = ",n,"nextConfigs avant elimination doublons:",len(nextConfigs),"configs")
         nextConfigs = eliminateDoubles(nextConfigs)
         print(n+1,'hyperplanes: ',len(nextConfigs),'configuration(s)')
     return nextConfigs
@@ -170,13 +173,10 @@ def generateConfigurations( nHyperplanes ):
     # TODO :
     # Check in configs if 2 configs differ only by hyperplanes having inverted 
     # departure and arrival regions, or if configs are identical
-    print('\nFinal configs:\n',nextConfigs)
-
-
 
 numberOfHyperplanes = 5
 z=generateConfigurations(numberOfHyperplanes)
-print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n',z)
+print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n')
 
 
 
