@@ -158,16 +158,10 @@ def generateConfigurations( nHyperplanes ):
                     #print('boucle 3, departFrom:',departFrom)
                     newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
                     nextConfigs = nextConfigs + newConfigs
-#                    if n==4 and departFrom==3:
-#                        print('\nnewConfigs:\n',newConfigs[2])
 #        if n==4:
 #            print("\nn = ",n,"nextConfigs avant elimination doublons:",len(nextConfigs),"configs")
-        if blob in nextConfigs:
-            print('avant')
-        if n<4:
-            nextConfigs = eliminateDoubles(nextConfigs)
-        if blob in nextConfigs:
-            print('apres')
+        
+        nextConfigs = eliminateDoubles(nextConfigs)
         print(n+1,'hyperplanes: ',len(nextConfigs),'configuration(s)')
     return nextConfigs
     
@@ -178,7 +172,7 @@ blob=[[[-1, 12, 14], [-1, 0, 3]], [[3, 8, 12], [1, 3, 4]], [[4, 10, -1], [1, 0, 
 
 numberOfHyperplanes = 5
 z=generateConfigurations(numberOfHyperplanes)
-print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n',z)
+print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n')
 
 
 

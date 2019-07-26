@@ -274,25 +274,48 @@ def graphBranchFromLabel(config,n):
                 return -1,-1,False
     return r,b,reverseOrder
 
-def checkIdenticalExistingVectors( configs, newConfigs, vectors, v, k ):
+def checkIdenticalExistingVectors( newConfigs, vectors, v ):
+    """
+    Returns True if there exists an already generated vector for one of the 
+    newConfigs vectors, that is equal to v.
+    Returns None otherwise.
+    """
     for i in newConfigs:
         for j in vectors[i]:
             if j == v:
                 return True
 
 def checkIdenticalNewVectors( configs, newConfigs, vectors, v ):
+    """
+    Generates new vectors and returns True if one of them is equal to v.
+    Returns None otherwise.
+    """
+    # to do: add a valence check before generating vectors
     for i in newConfigs:
         while True:
+            
             # Get the next vector for config i
             r,b,reverseOrder = graphBranchFromLabel( configs[i],len(vectors[i]) )
             if r == -1:
-                break
+                break # if all vectors have already been generated for i, get to next new config
             newVect = generateCodeVector(configs[i],r,b,reverseOrder)
+            
             # Add it to vectors
             vectors[i].append(newVect)
             # Check if it is equal to v
             if newVect == v:
                 return True
+
+def checkValence( k,newConfigs,nodesValence ):
+    """
+    Returns True if config k's valence is different from any other new config's
+    valence, False otherwise.
+    """
+    for i in newConfigs:
+        # check if valences are equal
+        if nodesValence[k] == nodesValence[i]:
+            return False
+    return True
 
 def Weinberg( configs ):
     """
@@ -310,25 +333,24 @@ def Weinberg( configs ):
     
     
     newConfigs = [0] # contains INDICES from configs
-    vectors = [ [] for k in range(len(configsInf)) ] # list of the lists of vectors of each graph
+    vectors = [ [] for k in range(len(configsInf)) ] # list of the lists of vectors of each graph/config
     
     # for each config k, check if it is isomorphic to a previous config i
     for k in range( 1 , len(configsInf) ):
         
-        for i in newConfigs:
-            # check if valences are equal
-            if nodesValence[k] != nodesValence[i]:
-                newConfigs.append(k)
-                break
+        if checkValence(k,newConfigs,nodesValence):
+            newConfigs.append(k)
             
-        else: # if valences are identical, check existing vectors compared to v
+        # if there is at least one graph from newConfigs with same valence as k
+        else: 
             v = generateCodeVector(configsInf[k],0,0)
-            if checkIdenticalExistingVectors( configsInf, newConfigs, vectors, v, k ):
-                break
+            # check existing vectors compared to v
+            if checkIdenticalExistingVectors( newConfigs, vectors, v ):
+                continue
                     
             # if no already generated vectors match with v, add vectors to previously registered configs
-            if checkIdenticalNewVectors(configsInf, newConfigs, vectors, v):
-                break
+            elif checkIdenticalNewVectors(configsInf, newConfigs, vectors, v):
+                continue
             else:
                 newConfigs.append(k)
                 vectors[k] = [v]
@@ -337,12 +359,17 @@ def Weinberg( configs ):
     configsReturned = []
     for i in newConfigs:
         configsReturned.append(configs[i])
-    
     return configsReturned # return configs with only indices from newConfigs
 
 
 
 
+
+
+
+
+
+## *** Tests area ***
 
 #config 2 regions:
 #config = [[[-1, 1], [-1, 0]], [[-1, 0], [-1, 0]]]
@@ -353,15 +380,16 @@ def Weinberg( configs ):
 #config2 = [[[3,1,2], [0]*3], [[-1,5,0,4],[0]*4], [[-1,6,0,5],[0]*4], [[-1,4,0,6],[0]*4], [[-1,1,3],[0]*3], [[-1,2,1],[0]*3], [[-1,3,2],[0]*3] ]
 
 #configs=[config,config2]
+    
 #configs = [[[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 13], [1, -1, 2, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10, 14], [2, -1, 3, 4]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 9, 5, 7], [3, 1, 2, 0]], [[13, 15, 8], [3, 2, 1]], [[6, -1, 15], [3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 9, 12], [4, 2, 3, 1]], [[6, 15, 13], [4, 3, 2]], [[10, -1, 2, 5, 9, 14], [4, -1, 0, 1, 2, 3]]], 
 #           [[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 12], [0, -1, 1, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 9, 13], [1, -1, 2, 3, 4]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[8, 15, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[11, 8, 4, -1], [3, 0, 2, -1]], [[12, 14, 5, 7], [3, 1, 2, 0]], [[3, 10, 14], [3, 2, 4]], [[9, 6, -1, 15], [2, 3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 8, 11], [4, 1, 3, 0]], [[3, 14, 12], [4, 3, 1]], [[9, 15, 8, 13], [4, 2, 1, 3]], [[10, -1, 2, 5, 14], [4, -1, 0, 1, 2]]], 
 #           [[[-1, 1, 11], [-1, 0, 4]], [[0, -1, 3, 8, 12], [0, -1, 1, 3, 4]], [[4, 15, -1], [1, 0, -1]], [[1, -1, 6, 9], [1, -1, 2, 3]], [[7, 5, 2, -1], [2, 0, 1, -1]], [[13, 15, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[11, 13, 4, -1], [3, 0, 2, -1]], [[1, 9, 13], [3, 1, 4]], [[8, 3, 10, 14], [1, 3, 2, 4]], [[9, 6, -1, 15], [2, 3, -1, 4]], [[0, 12, 7, -1], [4, 0, 3, -1]], [[1, 13, 11], [4, 3, 0]], [[8, 14, 5, 7, 12], [4, 1, 2, 0, 3]], [[9, 15, 13], [4, 2, 1]], [[10, -1, 2, 5, 14], [4, -1, 0, 1, 2]]],
 #           [[[-1, 12, 14], [-1, 0, 3]], [[3, 8, 12], [1, 3, 4]], [[4, 10, -1], [1, 0, -1]], [[-1, 6, 9, 1, 11], [-1, 2, 3, 1, 4]], [[7, 5, 2, -1, 15], [2, 0, 1, -1, 4]], [[8, 10, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[8, 4, 14], [0, 2, 4]], [[1, 9, 5, 7, 13], [3, 1, 2, 0, 4]], [[3, 10, 8], [3, 2, 1]], [[6, -1, 2, 5, 9], [3, -1, 0, 1, 2]], [[3, 12, -1], [4, 1, -1]], [[1, 13, 0, -1, 11], [4, 3, 0, -1, 1]], [[8, 14, 12], [4, 0, 3]], [[7, 15, -1, 0, 13], [4, 2, -1, 3, 0]], [[4, -1, 14], [4, -1, 2]]]]
-configs=z
-print(len(configs))
-z=Weinberg(configs)
-print(z)
-print(len(z))
+
+#print(len(configs))
+#z=Weinberg(configs)
+#print(z)
+#print(len(z))
 
 
 
