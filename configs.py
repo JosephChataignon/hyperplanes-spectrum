@@ -145,24 +145,27 @@ def generateConfigurations( nHyperplanes ):
     region1 = [[-1,0],[-1,0]]
     config  = [region0,region1]
     nextConfigs = [config]
+    
     # Loop adding hyperplanes
     for n in range(1,nHyperplanes):
-        #print('\n\nboucle 1, n=',n)
+        
         configs, nextConfigs = nextConfigs, []
+        
         # Iterate through configurations
         for config in configs:
-            #print('\nboucle 2, config=',config)
+            
             # Pass by all "departure points" possible for the new hyperplane
             for departFrom in range(len(config)):
-                if -1 in config[departFrom][0]: # if the region is on the edge of infinity
-                    #print('boucle 3, departFrom:',departFrom)
+                
+                # if the region is on the edge of infinity (ie suitable to depart from)
+                if -1 in config[departFrom][0]: 
+                    
                     newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
                     nextConfigs = nextConfigs + newConfigs
-#        if n==4:
-#            print("\nn = ",n,"nextConfigs avant elimination doublons:",len(nextConfigs),"configs")
         
         nextConfigs = eliminateDoubles(nextConfigs)
         print(n+1,'hyperplanes: ',len(nextConfigs),'configuration(s)')
+        
     return nextConfigs
     
     
@@ -170,7 +173,7 @@ def generateConfigurations( nHyperplanes ):
 
 blob=[[[-1, 12, 14], [-1, 0, 3]], [[3, 8, 12], [1, 3, 4]], [[4, 10, -1], [1, 0, -1]], [[-1, 6, 9, 1, 11], [-1, 2, 3, 1, 4]], [[7, 5, 2, -1, 15], [2, 0, 1, -1, 4]], [[8, 10, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[8, 4, 14], [0, 2, 4]], [[1, 9, 5, 7, 13], [3, 1, 2, 0, 4]], [[3, 10, 8], [3, 2, 1]], [[6, -1, 2, 5, 9], [3, -1, 0, 1, 2]], [[3, 12, -1], [4, 1, -1]], [[1, 13, 0, -1, 11], [4, 3, 0, -1, 1]], [[8, 14, 12], [4, 0, 3]], [[7, 15, -1, 0, 13], [4, 2, -1, 3, 0]], [[4, -1, 14], [4, -1, 2]]]
 
-numberOfHyperplanes = 5
+numberOfHyperplanes = 6
 z=generateConfigurations(numberOfHyperplanes)
 print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n')
 

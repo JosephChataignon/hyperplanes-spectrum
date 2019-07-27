@@ -348,7 +348,7 @@ def Weinberg( configs ):
             if checkIdenticalExistingVectors( newConfigs, vectors, v ):
                 continue
                     
-            # if no already generated vectors match with v, add vectors to previously registered configs
+            # if no already generated vectors match with v, generate vectors to previously registered configs
             elif checkIdenticalNewVectors(configsInf, newConfigs, vectors, v):
                 continue
             else:
@@ -359,7 +359,8 @@ def Weinberg( configs ):
     configsReturned = []
     for i in newConfigs:
         configsReturned.append(configs[i])
-    return configsReturned # return configs with only indices from newConfigs
+    
+    return configsReturned
 
 
 
