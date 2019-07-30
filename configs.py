@@ -7,6 +7,7 @@ import scipy
 import copy
 
 import isomorphisms as isom
+import isomorphisms2 as isom2
 
 
 
@@ -127,7 +128,7 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
 
 def eliminateDoubles( configs ):
     # return isom.bruteForce(configs)
-    return isom.Weinberg(copy.deepcopy(configs))
+    return isom2.Weinberg(copy.deepcopy(configs))
 
 def generateConfigurations( nHyperplanes ):
     '''
@@ -173,7 +174,7 @@ def generateConfigurations( nHyperplanes ):
 
 blob=[[[-1, 12, 14], [-1, 0, 3]], [[3, 8, 12], [1, 3, 4]], [[4, 10, -1], [1, 0, -1]], [[-1, 6, 9, 1, 11], [-1, 2, 3, 1, 4]], [[7, 5, 2, -1, 15], [2, 0, 1, -1, 4]], [[8, 10, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[8, 4, 14], [0, 2, 4]], [[1, 9, 5, 7, 13], [3, 1, 2, 0, 4]], [[3, 10, 8], [3, 2, 1]], [[6, -1, 2, 5, 9], [3, -1, 0, 1, 2]], [[3, 12, -1], [4, 1, -1]], [[1, 13, 0, -1, 11], [4, 3, 0, -1, 1]], [[8, 14, 12], [4, 0, 3]], [[7, 15, -1, 0, 13], [4, 2, -1, 3, 0]], [[4, -1, 14], [4, -1, 2]]]
 
-numberOfHyperplanes = 6
+numberOfHyperplanes = 7
 z=generateConfigurations(numberOfHyperplanes)
 print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n')
 
