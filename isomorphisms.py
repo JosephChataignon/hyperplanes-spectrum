@@ -3,7 +3,7 @@
 
 
 
-# The following 3 functions are from or adapted from :
+# The following 3 functions are from, or adapted from :
 # github.com/ddatsko/isomorphic_graphs
 # however this part of the program is highly inefficient in this case
 def next_permutation(perm):
@@ -274,24 +274,28 @@ def graphBranchFromLabel(config,n):
                 return -1,-1,False
     return r,b,reverseOrder
 
-def checkIdenticalExistingVectors( newConfigs, vectors, v ):
+def checkIdenticalExistingVectors( nodesValence, newConfigs, vectors, v, k ):
     """
     Returns True if there exists an already generated vector for one of the 
     newConfigs vectors, that is equal to v.
     Returns None otherwise.
     """
     for i in newConfigs:
+        if nodesValence[i] != nodesValence[k]:
+            continue
         for j in vectors[i]:
             if j == v:
                 return True
 
-def checkIdenticalNewVectors( configs, newConfigs, vectors, v ):
+def checkIdenticalNewVectors( nodesValence, configs, newConfigs, vectors, v, k ):
     """
     Generates new vectors and returns True if one of them is equal to v.
     Returns None otherwise.
     """
     # to do: add a valence check before generating vectors
     for i in newConfigs:
+        if nodesValence[i] != nodesValence[k]:
+            continue
         while True:
             
             # Get the next vector for config i
@@ -345,11 +349,11 @@ def Weinberg( configs ):
         else: 
             v = generateCodeVector(configsInf[k],0,0)
             # check existing vectors compared to v
-            if checkIdenticalExistingVectors( newConfigs, vectors, v ):
+            if checkIdenticalExistingVectors( nodesValence, newConfigs, vectors, v, k ):
                 continue
                     
             # if no already generated vectors match with v, generate vectors to previously registered configs
-            elif checkIdenticalNewVectors(configsInf, newConfigs, vectors, v):
+            elif checkIdenticalNewVectors( nodesValence, configsInf, newConfigs, vectors, v, k ):
                 continue
             else:
                 newConfigs.append(k)
