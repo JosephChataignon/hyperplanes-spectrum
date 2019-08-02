@@ -7,7 +7,7 @@ import scipy
 import copy
 
 import isomorphisms as isom
-import isomorphisms2 as isom2
+#import isomorphisms2 as isom2
 
 
 
@@ -15,6 +15,7 @@ import isomorphisms2 as isom2
 
 def getNumberOfRegions( nHyperplanes ):
     return 1 + nHyperplanes + scipy.special.binom(nHyperplanes,2)
+
 
 def divideRegion( n, region, sidePreviousRegion, sideNextRegion, previousSecondRegion, newIndexA, newIndexB ):
     '''
@@ -60,6 +61,8 @@ def divideRegion( n, region, sidePreviousRegion, sideNextRegion, previousSecondR
         if started:
             c = c + 1
     return region1,region2
+
+
 
 def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previousSecondRegion=-1, hyperplanesCrossed=[] ):
     '''
@@ -126,9 +129,15 @@ def recursiveConfigurations( n, config, indexRegion, previousRegion=-1, previous
 
 
 
+
 def eliminateDoubles( configs ):
+    ''' Chose the isomorphism function to use. '''
     # return isom.bruteForce(configs)
-    return isom2.Weinberg(copy.deepcopy(configs))
+    return isom.Weinberg(copy.deepcopy(configs))
+
+
+
+
 
 def generateConfigurations( nHyperplanes ):
     '''
@@ -151,6 +160,8 @@ def generateConfigurations( nHyperplanes ):
     for n in range(1,nHyperplanes):
         
         configs, nextConfigs = nextConfigs, []
+        nextConfigsCodeVectors = []
+        nextConfigsValences = []
         
         # Iterate through configurations
         for config in configs:
@@ -161,10 +172,17 @@ def generateConfigurations( nHyperplanes ):
                 # if the region is on the edge of infinity (ie suitable to depart from)
                 if -1 in config[departFrom][0]: 
                     
-                    newConfigs = recursiveConfigurations(n,copy.deepcopy(config),indexRegion=departFrom)
-                    nextConfigs = nextConfigs + newConfigs
+                    newConfigs = recursiveConfigurations( n , copy.deepcopy(config) , indexRegion=departFrom )
+                
+                newConfigs, newVectors, newValences = isom.checkForDoubles(copy.deepcopy(newConfigs), 
+                                                                           nextConfigs, 
+                                                                           nextConfigsCodeVectors, 
+                                                                           nextConfigsValences )
+                nextConfigsCodeVectors  = newVectors
+                nextConfigs            += newConfigs
+                nextConfigsValences    += newValences
         
-        nextConfigs = eliminateDoubles(nextConfigs)
+        #nextConfigs = eliminateDoubles(nextConfigs)
         print(n+1,'hyperplanes: ',len(nextConfigs),'configuration(s)')
         
     return nextConfigs
@@ -172,7 +190,7 @@ def generateConfigurations( nHyperplanes ):
     
     
 
-blob=[[[-1, 12, 14], [-1, 0, 3]], [[3, 8, 12], [1, 3, 4]], [[4, 10, -1], [1, 0, -1]], [[-1, 6, 9, 1, 11], [-1, 2, 3, 1, 4]], [[7, 5, 2, -1, 15], [2, 0, 1, -1, 4]], [[8, 10, 4], [2, 1, 0]], [[3, -1, 10], [2, -1, 3]], [[8, 4, 14], [0, 2, 4]], [[1, 9, 5, 7, 13], [3, 1, 2, 0, 4]], [[3, 10, 8], [3, 2, 1]], [[6, -1, 2, 5, 9], [3, -1, 0, 1, 2]], [[3, 12, -1], [4, 1, -1]], [[1, 13, 0, -1, 11], [4, 3, 0, -1, 1]], [[8, 14, 12], [4, 0, 3]], [[7, 15, -1, 0, 13], [4, 2, -1, 3, 0]], [[4, -1, 14], [4, -1, 2]]]
+
 
 numberOfHyperplanes = 7
 z=generateConfigurations(numberOfHyperplanes)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import copy
 
 
 
@@ -163,6 +163,7 @@ def generateCodeVector(config,r,b,reverseOrder=False):
     # we add terminalNode to path, and update the value of initialNode,
     # terminalNode and branch.
     while(True):#Could be changed, length of eulerian path
+        print(terminalNode)
         reverseBranch = config[terminalNode].index(initialNode)
         
         branchesVisited[initialNode][branch] = True
@@ -274,7 +275,7 @@ def graphBranchFromLabel(config,n):
                 return -1,-1,False
     return r,b,reverseOrder
 
-def checkIdenticalExistingVectors( nodesValence, newConfigs, vectors, v, k ):
+def checkIdenticalExistingVectors( newConfigs, vectors, v, k, nodesValence ):
     """
     Returns True if there exists an already generated vector for one of the 
     newConfigs vectors, that is equal to v.
@@ -287,12 +288,25 @@ def checkIdenticalExistingVectors( nodesValence, newConfigs, vectors, v, k ):
             if j == v:
                 return True
 
-def checkIdenticalNewVectors( nodesValence, configs, newConfigs, vectors, v, k ):
+def checkIdenticalExistingPreviousVectors( previousValences, previousConfigsVectors, valence, v ):
+    """
+    Returns True if there exists an already generated vector from 
+    previousConfigsVectors, that is equal to v.
+    Returns None otherwise.
+    """
+    for i in range(len(previousValences)):
+        if valence != previousValences[i]:
+            continue
+        for j in previousConfigsVectors[i]:
+            if j == v:
+                return True
+    
+
+def checkIdenticalNewVectors( configs, newConfigs, vectors, v, k, nodesValence, previousValences=None ):
     """
     Generates new vectors and returns True if one of them is equal to v.
     Returns None otherwise.
     """
-    # to do: add a valence check before generating vectors
     for i in newConfigs:
         if nodesValence[i] != nodesValence[k]:
             continue
@@ -310,14 +324,41 @@ def checkIdenticalNewVectors( nodesValence, configs, newConfigs, vectors, v, k )
             if newVect == v:
                 return True
 
-def checkValence( k,newConfigs,nodesValence ):
+def checkIdenticalNewVectorsPreviousConfigs(previousConfigs, previousVectors, v, valence, previousValences):
+    """
+    Generates new vectors for the previousConfigs and compares them to v. 
+    Returns True if one of those is equal to v, None otherwise.
+    """
+    for i in range(len(previousConfigs)):
+        if previousValences[i] != valence:
+            continue # skip if valences are different
+        while True:
+            
+            # Get the next vector for config i
+            r,b,reverseOrder = graphBranchFromLabel( previousConfigs[i],len(previousVectors[i]) )
+            if r == -1:
+                break # if all vectors have already been generated for i, get to next new config
+            newVect = generateCodeVector(previousConfigs[i],r,b,reverseOrder)
+            
+            # Add it to vectors
+            previousVectors[i].append(newVect)
+            # Check if it is equal to v
+            if newVect == v:
+                return True
+
+
+def checkValence( k, newConfigs, valences, previousValences=None ):
     """
     Returns True if config k's valence is different from any other new config's
     valence, False otherwise.
     """
+    if previousValences:
+        for i in previousValences:
+            if valences[k] == i:
+                return False
     for i in newConfigs:
         # check if valences are equal
-        if nodesValence[k] == nodesValence[i]:
+        if valences[k] == valences[i]:
             return False
     return True
 
@@ -368,7 +409,55 @@ def Weinberg( configs ):
 
 
 
-
+def checkForDoubles( inputConfigs, previousConfigs, previousConfigsVectors, previousValences ):
+    """
+        Check if the configs of configs are isomorphic to any config of 
+        previousConfigs to return only the ones that are not.
+        previousConfigsCodeVectors contains the code vectors already generated 
+        for previousConfigs.
+        Returns the new configs that are to be kept and their code vectors.
+    """
+    newConfigs  = [] # INDICES of configs from inputConfigs that will be kept
+    
+    configs  = addInfiniteRegion(copy.deepcopy(inputConfigs))   # new configs to test
+    valences = getNodesValence(configs)                         # valences of configsInf
+    vectors  = [ [] for k in range(len(configs)) ]              # vectors of configs
+    
+    
+    # for each config k, check if it is isomorphic to a previousConfig or a newConfig
+    for k in range( 0 , len(configs) ):
+        
+        if checkValence( k, newConfigs, valences, previousValences):
+            newConfigs.append(k)
+        
+        else:
+            v = generateCodeVector(configs[k],0,0)
+            # check existing vectors compared to v
+            if checkIdenticalExistingVectors( newConfigs, vectors, v, k, valences ):
+                continue
+            if checkIdenticalExistingPreviousVectors( previousValences, previousConfigsVectors, valences[k], v ):
+                continue
+                    
+            # if no already generated vectors match with v, generate vectors to previously registered configs
+            if checkIdenticalNewVectorsPreviousConfigs( previousConfigs, previousConfigsVectors, v, valences[k], previousValences ):
+                continue
+            if checkIdenticalNewVectors( configs, newConfigs, vectors, v, k, valences, previousValences ):
+                continue
+            
+            # if config k is definitely new
+            newConfigs.append(k)
+            vectors[k] = [v]
+    
+    
+    
+    # Conversion from indices to actual configurations
+    configsReturned = []
+    for i in newConfigs:
+        configsReturned.append(inputConfigs[i])
+    vectorsReturned = previousConfigsVectors + vectors
+        
+    print(configsReturned)
+    return configsReturned, vectorsReturned, valences
 
 
 
