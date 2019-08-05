@@ -163,7 +163,6 @@ def generateCodeVector(config,r,b,reverseOrder=False):
     # we add terminalNode to path, and update the value of initialNode,
     # terminalNode and branch.
     while(True):#Could be changed, length of eulerian path
-        print(terminalNode)
         reverseBranch = config[terminalNode].index(initialNode)
         
         branchesVisited[initialNode][branch] = True
@@ -239,6 +238,8 @@ def addInfiniteRegion(configs):
     Adds the infinite region as a node of the graph to each configuration in
     the array configs
     """
+    if len(configs) == 0:
+        return []
     infiniteIndex = len(configs[0])
     # replace reference to the infinite region and delete hyperplanes
     configs = [[[infiniteIndex if b == -1 else b for b in r[0]] for r in config] for config in configs]
@@ -390,11 +391,11 @@ def Weinberg( configs ):
         else: 
             v = generateCodeVector(configsInf[k],0,0)
             # check existing vectors compared to v
-            if checkIdenticalExistingVectors( nodesValence, newConfigs, vectors, v, k ):
+            if checkIdenticalExistingVectors( newConfigs, vectors, v, k, nodesValence ):
                 continue
                     
             # if no already generated vectors match with v, generate vectors to previously registered configs
-            elif checkIdenticalNewVectors( nodesValence, configsInf, newConfigs, vectors, v, k ):
+            elif checkIdenticalNewVectors( configsInf, newConfigs, vectors, v, k, nodesValence ):
                 continue
             else:
                 newConfigs.append(k)
@@ -411,14 +412,16 @@ def Weinberg( configs ):
 
 def checkForDoubles( inputConfigs, previousConfigs, previousConfigsVectors, previousValences ):
     """
-        Check if the configs of configs are isomorphic to any config of 
+        Check if the configs of inputConfigs are isomorphic to any config of 
         previousConfigs to return only the ones that are not.
         previousConfigsCodeVectors contains the code vectors already generated 
         for previousConfigs.
-        Returns the new configs that are to be kept and their code vectors.
+        Returns the new configs that are to be kept, their valences and updates
+        the code vectors.
     """
     newConfigs  = [] # INDICES of configs from inputConfigs that will be kept
     
+    previousConfigsInf = addInfiniteRegion(copy.deepcopy(previousConfigs))
     configs  = addInfiniteRegion(copy.deepcopy(inputConfigs))   # new configs to test
     valences = getNodesValence(configs)                         # valences of configsInf
     vectors  = [ [] for k in range(len(configs)) ]              # vectors of configs
@@ -439,7 +442,7 @@ def checkForDoubles( inputConfigs, previousConfigs, previousConfigsVectors, prev
                 continue
                     
             # if no already generated vectors match with v, generate vectors to previously registered configs
-            if checkIdenticalNewVectorsPreviousConfigs( previousConfigs, previousConfigsVectors, v, valences[k], previousValences ):
+            if checkIdenticalNewVectorsPreviousConfigs( previousConfigsInf, previousConfigsVectors, v, valences[k], previousValences ):
                 continue
             if checkIdenticalNewVectors( configs, newConfigs, vectors, v, k, valences, previousValences ):
                 continue
@@ -456,7 +459,6 @@ def checkForDoubles( inputConfigs, previousConfigs, previousConfigsVectors, prev
         configsReturned.append(inputConfigs[i])
     vectorsReturned = previousConfigsVectors + vectors
         
-    print(configsReturned)
     return configsReturned, vectorsReturned, valences
 
 

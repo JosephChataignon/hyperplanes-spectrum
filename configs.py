@@ -173,7 +173,8 @@ def generateConfigurations( nHyperplanes ):
                 if -1 in config[departFrom][0]: 
                     
                     newConfigs = recursiveConfigurations( n , copy.deepcopy(config) , indexRegion=departFrom )
-                
+                    #nextConfigs = nextConfigs+newConfigs #first version, before using checkForDoubles()
+                    
                 newConfigs, newVectors, newValences = isom.checkForDoubles(copy.deepcopy(newConfigs), 
                                                                            nextConfigs, 
                                                                            nextConfigsCodeVectors, 
@@ -182,7 +183,7 @@ def generateConfigurations( nHyperplanes ):
                 nextConfigs            += newConfigs
                 nextConfigsValences    += newValences
         
-        #nextConfigs = eliminateDoubles(nextConfigs)
+        nextConfigs = eliminateDoubles(nextConfigs)
         print(n+1,'hyperplanes: ',len(nextConfigs),'configuration(s)')
         
     return nextConfigs
