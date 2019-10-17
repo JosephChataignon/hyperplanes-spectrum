@@ -193,7 +193,7 @@ def generateConfigurations( nHyperplanes ):
 
 
 
-numberOfHyperplanes = 7
+numberOfHyperplanes = 10
 z=generateConfigurations(numberOfHyperplanes)
 print('final result:',len(z),'configuration(s) for',numberOfHyperplanes,'hyperplanes\n')
 
